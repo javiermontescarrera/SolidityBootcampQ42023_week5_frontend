@@ -4,6 +4,8 @@ import { useAccount, useBalance, useNetwork, useSignMessage } from "wagmi";
 import { useContractRead } from "wagmi";
 import React from "react";
 
+let lotteryStatus = "closed";
+
 const Home: NextPage = () => {
   return (
     <>
@@ -13,12 +15,6 @@ const Home: NextPage = () => {
             <span className="block text-2xl mb-2">Welcome to</span>
             <span className="block text-4xl font-bold">Team 9 - Lottery</span>
           </h1>
-          <p className="text-center text-lg">
-            Get started by editing{" "}
-            <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-              packages/nextjs/pages/index.tsx
-            </code>
-          </p>
           <PageBody></PageBody>
         </div>
       </div>
@@ -29,12 +25,39 @@ const Home: NextPage = () => {
 function PageBody() {
   return (
     <>
-      <p className="text-center text-lg">Here we are!</p>
+      <LotteryStatus></LotteryStatus>
       <WalletInfo></WalletInfo>
+      <LotteryAdmin></LotteryAdmin>
       <RandomWord></RandomWord>
     </>
   );
 }
+
+function LotteryStatus() {
+  const [data, setData] = useState<{ result: string }>();
+  const [isLoading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:3001/lottery-status")
+      .then(res => res.json())
+      .then(data => {
+        setData(data);
+        setLoading(false);
+      });
+  }, []);
+
+  if (isLoading) return <p>Loading Lottery Status...</p>;
+  if (!data) return <p>No lottery information</p>;
+
+  lotteryStatus = data.result.toLowerCase();
+
+  return (
+    <div>
+      <p>Lottery Status: {data.result}</p>
+    </div>
+  );
+}
+
 function WalletInfo() {
   const { address, isConnecting, isDisconnected } = useAccount();
   const { chain } = useNetwork();
@@ -43,9 +66,8 @@ function WalletInfo() {
       <div>
         <p>Connected to the network {chain?.name}</p>
         <Wallet address={address as `0x${string}`}></Wallet>
-        <WalletAction></WalletAction>
-        {/* <TokenInfo address={address as `0x${string}`}></TokenInfo> */}
-        <ApiData address={address as `0x${string}`}></ApiData>
+        {/* <WalletAction></WalletAction>
+        <ApiData address={address as `0x${string}`}></ApiData> */}
       </div>
     );
   if (isConnecting)
@@ -207,6 +229,80 @@ function ApiData(params: { address: `0x${string}` }) {
     </div>
   );
 }
+
+function LotteryAdmin() {
+  const { address, isConnecting, isDisconnected } = useAccount();
+  if(lotteryStatus == "closed")
+    if (address)
+      return (
+        <div className="card w-96 bg-primary text-primary-content mt-4">
+          <div className="card-body">
+            <h2 className="card-title">Lottery Admin</h2>
+            <p>Open Bets</p>
+            <OpenBets></OpenBets>
+          </div>
+        </div>
+      );
+}
+
+function OpenBets() {
+  const [data, setData] = useState<{ result: boolean }>();
+  const [lotteryDuration, setLotteryDuration] = useState("");
+  const [isLoading, setLoading] = useState(false);
+  const [isOpenBetsSuccesfull, setOpenBetsStatus] = useState(false);
+  const [hashValue, setHashValue] = useState("");
+  if (!data)
+    return (
+      <div className="flex items-center flex-col flex-grow">
+        {/* <h2 className="card-title">Vote</h2> */}
+        <div className="form-control w-full max-w-xs my-4">
+          <input
+            type="number"
+            min="1"
+            placeholder="Type here the lottery duration (min)"
+            className="input input-bordered w-full max-w-xs"
+            value={lotteryDuration}
+            onChange={e => setLotteryDuration(e.target.value)}
+          />
+        </div>
+        <button
+          className="btn btn-active btn-neutral"
+          disabled={isLoading}
+          onClick={() => {
+            setLoading(true);
+            fetch("http://localhost:3001/open-bets", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ duration: ( Number(lotteryDuration) * 60) }),
+            })
+              .then(res => res.json())
+              .then(data => {
+                console.log(`body: ${{ duration: ( Number(lotteryDuration) * 60) }}`);
+                setData(data);
+                setLoading(false);
+                if (data.result.success) {
+                  setHashValue(data.result.transactionHash);
+                  setOpenBetsStatus(true);
+                }
+              });
+          }}
+        >
+          Open Bets
+        </button>
+      </div>
+    );
+
+  return (
+    <div>
+      <p>
+        {isOpenBetsSuccesfull
+          ? "Opening Bets succesfull, transaction hash: " + hashValue
+          : "I'm sorry, there was an error."}
+      </p>
+    </div>
+  );
+}
+
 
 function RandomWord() {
   const [data, setData] = useState<any>(null);
