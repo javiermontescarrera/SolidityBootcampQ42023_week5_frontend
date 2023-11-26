@@ -29,7 +29,6 @@ function PageBody() {
       <LotteryStatus></LotteryStatus>
       <WalletInfo></WalletInfo>
       <LotteryAdmin></LotteryAdmin>
-      <Buy></Buy>
       <BetZone></BetZone>
       {/* <RandomWord></RandomWord> */}
     </>
@@ -380,55 +379,6 @@ function RefreshButton() {
   );
 }
 
-function Buy() {
-  const [amount, setAmount] = useState("0.001");
-  const [data, setData] = useState<{ result: boolean }>();
-  const [isLoading, setLoading] = useState(false);
-  const [isSuccesfull, setBuyingStatus] = useState(false);
-  const [hashValue, setHashValue] = useState("");
-  if (!data)
-    return (
-      <div className="flex items-center flex-col flex-grow">
-        <h2 className="card-title">Buy tokens</h2>
-        <div className="form-control w-full max-w-xs my-4">
-          <input
-            type="number"
-            min="0"
-            max="10"
-            placeholder="Type here the amount of tokens you want to buy"
-            className="input input-bordered w-full max-w-xs"
-            value={amount}
-            onChange={e => setAmount(e.target.value)}
-          />
-          <br></br>
-        </div>
-        <button
-          className="btn btn-active btn-neutral"
-          disabled={isLoading}
-          onClick={() => {
-            setLoading(true);
-            fetch("http://localhost:3001/buy", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ amount: amount }),
-            })
-              .then(res => res.json())
-              .then(data => {
-                console.log(`body: ${{ amount: amount }}`);
-                setData(data);
-                setLoading(false);
-                if (data.result.success) {
-                  setHashValue(data.result.transactionHash);
-                  setBuyingStatus(true);
-                }
-              });
-          }}
-        >
-          Buy
-        </button>
-      </div>
-    );
-
 function BetZone() {
   const { address, isConnecting, isDisconnected } = useAccount();
   if (address)
@@ -437,6 +387,8 @@ function BetZone() {
         <div className="card-body">
           <h2 className="card-title">Bet Zone</h2>
           <TokenBalance></TokenBalance>
+          <br></br>
+          <Buy></Buy>
         </div>
       </div>
     );
@@ -483,6 +435,57 @@ function TokenBalance() {
       </p>
     </div>
   );
+}
+
+function Buy() {
+  const [amount, setAmount] = useState("");
+  const [data, setData] = useState<{ result: boolean }>();
+  const [isLoading, setLoading] = useState(false);
+  const [isSuccesfull, setBuyingStatus] = useState(false);
+  const [hashValue, setHashValue] = useState("");
+  if (!data)
+    return (
+      <div className="flex items-center flex-col flex-grow">
+        <h2 className="card-title">Buy tokens</h2>
+        <div className="form-control w-full max-w-xs my-1">
+          <input
+            type="number"
+            min="1"
+            max="100"
+            step="1"
+            placeholder="Type here the amount of tokens to buy"
+            className="input input-bordered w-full max-w-xs"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+          />
+          <br></br>
+        </div>
+        <button
+          className="btn btn-active btn-neutral"
+          disabled={isLoading}
+          onClick={() => {
+            setLoading(true);
+            fetch("http://localhost:3001/buy", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ amount: amount }),
+            })
+              .then(res => res.json())
+              .then(data => {
+                console.log(`body: ${{ amount: amount }}`);
+                setData(data);
+                setLoading(false);
+                if (data.result.success) {
+                  setHashValue(data.result.transactionHash);
+                  setBuyingStatus(true);
+                }
+              });
+          }}
+        >
+          Buy
+        </button>
+      </div>
+    );
 }
 
 function RandomWord() {
