@@ -486,6 +486,16 @@ function Buy() {
         </button>
       </div>
     );
+
+  return (
+    <div>
+      <p>
+        {data.result
+          ? "Purchase transaction hash: " + data.result.transactionHash
+          : "I'm sorry, ther was an error."}
+      </p>
+    </div>
+  );
 }
 
 function RandomWord() {
