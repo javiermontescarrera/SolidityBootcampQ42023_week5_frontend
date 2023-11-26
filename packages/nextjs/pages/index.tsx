@@ -5,6 +5,7 @@ import { useContractRead } from "wagmi";
 import React from "react";
 
 let lotteryStatus = "closed";
+let txInProgress = false;
 
 const Home: NextPage = () => {
   return (
@@ -28,7 +29,7 @@ function PageBody() {
       <LotteryStatus></LotteryStatus>
       <WalletInfo></WalletInfo>
       <LotteryAdmin></LotteryAdmin>
-      <RandomWord></RandomWord>
+      {/* <RandomWord></RandomWord> */}
     </>
   );
 }
@@ -232,17 +233,17 @@ function ApiData(params: { address: `0x${string}` }) {
 
 function LotteryAdmin() {
   const { address, isConnecting, isDisconnected } = useAccount();
-  if(lotteryStatus == "closed")
-    if (address)
-      return (
-        <div className="card w-96 bg-primary text-primary-content mt-4">
-          <div className="card-body">
-            <h2 className="card-title">Lottery Admin</h2>
-            <p>Open Bets</p>
-            <OpenBets></OpenBets>
-          </div>
+  if (address)
+    return (
+      <div className="card w-96 bg-primary text-primary-content mt-4">
+        <div className="card-body">
+          <h2 className="card-title">Lottery Admin</h2>
+          <OpenBets></OpenBets>
+          <CloseLottery></CloseLottery>
+          <RefreshButton></RefreshButton>
         </div>
-      );
+      </div>
+    );
 }
 
 function OpenBets() {
@@ -251,58 +252,130 @@ function OpenBets() {
   const [isLoading, setLoading] = useState(false);
   const [isOpenBetsSuccesfull, setOpenBetsStatus] = useState(false);
   const [hashValue, setHashValue] = useState("");
-  if (!data)
-    return (
-      <div className="flex items-center flex-col flex-grow">
-        {/* <h2 className="card-title">Vote</h2> */}
-        <div className="form-control w-full max-w-xs my-4">
-          <input
-            type="number"
-            min="1"
-            placeholder="Type here the lottery duration (min)"
-            className="input input-bordered w-full max-w-xs"
-            value={lotteryDuration}
-            onChange={e => setLotteryDuration(e.target.value)}
-          />
+    
+  if (isLoading) return <p>Opening bets...</p>;
+
+  if(lotteryStatus == "closed") {
+    if (!data)
+      return (
+        <div className="flex items-center flex-col flex-grow">
+          {/* <h2 className="card-title">Vote</h2> */}
+          <p>Open Bets</p>
+          <div className="form-control w-full max-w-xs my-4">
+            <input
+              type="number"
+              min="1"
+              placeholder="Type here the lottery duration (min)"
+              className="input input-bordered w-full max-w-xs"
+              value={lotteryDuration}
+              onChange={e => setLotteryDuration(e.target.value)}
+            />
+          </div>
+          <button
+            className="btn btn-active btn-neutral"
+            disabled={isLoading}
+            onClick={() => {
+              setLoading(true);
+              fetch("http://localhost:3001/open-bets", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ duration: ( Number(lotteryDuration) * 60) }),
+              })
+                .then(res => res.json())
+                .then(data => {
+                  console.log(`body: ${{ duration: ( Number(lotteryDuration) * 60) }}`);
+                  setData(data);
+                  setLoading(false);
+                  txInProgress = true;
+                  if (data.result.success) {
+                    setHashValue(data.result.transactionHash);
+                    setOpenBetsStatus(true);
+                  }
+                  txInProgress = false;
+                });
+            }}
+          >
+            Open Bets
+          </button>
         </div>
-        <button
-          className="btn btn-active btn-neutral"
-          disabled={isLoading}
-          onClick={() => {
-            setLoading(true);
-            fetch("http://localhost:3001/open-bets", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ duration: ( Number(lotteryDuration) * 60) }),
-            })
-              .then(res => res.json())
-              .then(data => {
-                console.log(`body: ${{ duration: ( Number(lotteryDuration) * 60) }}`);
-                setData(data);
-                setLoading(false);
-                if (data.result.success) {
-                  setHashValue(data.result.transactionHash);
-                  setOpenBetsStatus(true);
-                }
-              });
-          }}
-        >
-          Open Bets
-        </button>
+      );
+
+    return (
+      <div>
+        <p>
+          {isOpenBetsSuccesfull
+            ? "Opening Bets succesfull, transaction hash: " + hashValue
+            : "I'm sorry, there was an error."}
+        </p>
       </div>
     );
-
-  return (
-    <div>
-      <p>
-        {isOpenBetsSuccesfull
-          ? "Opening Bets succesfull, transaction hash: " + hashValue
-          : "I'm sorry, there was an error."}
-      </p>
-    </div>
-  );
+  }
 }
 
+function CloseLottery() {
+  const [data, setData] = useState<{ result: boolean }>();
+  const [isLoading, setLoading] = useState(false);
+  const [isCloseLotterySuccesfull, setCloseLotteryStatus] = useState(false);
+  const [hashValue, setHashValue] = useState("");
+
+  if (isLoading) return <p>Closing the lottery...</p>;
+
+  if(lotteryStatus != "closed") {
+    if (!data)
+      return (
+        <div className="flex items-center flex-col flex-grow">
+          <button
+            className="btn btn-active btn-neutral"
+            disabled={isLoading}
+            onClick={() => {
+              setLoading(true);
+              fetch("http://localhost:3001/close-lottery", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              })
+                .then(res => res.json())
+                .then(data => {
+                  setData(data);
+                  setLoading(false);
+                  txInProgress = true;
+                  if (data.result.success) {
+                    setHashValue(data.result.transactionHash);
+                    setCloseLotteryStatus(true);
+                  }
+                  txInProgress = false;
+                });
+            }}
+          >
+            Close Lottery
+          </button>
+        </div>
+      );
+  
+    return (
+      <div>
+        <p>
+          {isCloseLotterySuccesfull
+            ? "Close Lottery succesfull, transaction hash: " + hashValue
+            : "I'm sorry, maybe it's too ealy. Try again later."}
+        </p>
+      </div>
+    );
+  }
+}
+
+function RefreshButton() {
+  return (
+    <button 
+      className="btn btn-active btn-neutral"
+      disabled={txInProgress}
+      onClick={() => {
+        window.location.reload();
+      }}
+      >
+        Refresh Page
+    </button>
+  );
+}
 
 function RandomWord() {
   const [data, setData] = useState<any>(null);
