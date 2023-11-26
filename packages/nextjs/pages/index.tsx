@@ -29,6 +29,7 @@ function PageBody() {
       <LotteryStatus></LotteryStatus>
       <WalletInfo></WalletInfo>
       <LotteryAdmin></LotteryAdmin>
+      <BetZone></BetZone>
       {/* <RandomWord></RandomWord> */}
     </>
   );
@@ -276,6 +277,7 @@ function OpenBets() {
             disabled={isLoading}
             onClick={() => {
               setLoading(true);
+              txInProgress = true;
               const objDuration = { duration: ( Number(lotteryDuration) * 60) }
               fetch("http://localhost:3001/open-bets", {
                 method: "POST",
@@ -287,10 +289,9 @@ function OpenBets() {
                   console.log(`body: ${objDuration}`);
                   setData(data);
                   setLoading(false);
-                  txInProgress = true;
                   if (data.result.success) {
-                    setHashValue(data.result.transactionHash);
-                    setOpenBetsStatus(true);
+                  setHashValue(data.result.transactionHash);
+                  setOpenBetsStatus(true);
                   }
                   txInProgress = false;
                 });
@@ -330,6 +331,7 @@ function CloseLottery() {
             disabled={isLoading}
             onClick={() => {
               setLoading(true);
+              txInProgress = true;
               fetch("http://localhost:3001/close-lottery", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -338,7 +340,6 @@ function CloseLottery() {
                 .then(data => {
                   setData(data);
                   setLoading(false);
-                  txInProgress = true;
                   if (data.result.success) {
                     setHashValue(data.result.transactionHash);
                     setCloseLotteryStatus(true);
@@ -375,6 +376,62 @@ function RefreshButton() {
       >
         Refresh Page
     </button>
+  );
+}
+
+function BetZone() {
+  const { address, isConnecting, isDisconnected } = useAccount();
+  if (address)
+    return (
+      <div className="card w-96 bg-primary text-primary-content mt-4">
+        <div className="card-body">
+          <h2 className="card-title">Bet Zone</h2>
+          <TokenBalance></TokenBalance>
+        </div>
+      </div>
+    );
+}
+
+function TokenBalance() {
+  const { address } = useAccount();
+  const [data, setData] = useState<{ result: boolean }>();
+  const [isLoading, setLoading] = useState(false);
+
+  if (isLoading) return <div>Fetching token balance…</div>;
+  
+  if (!data)
+    return (
+      <div className="flex items-center flex-col flex-grow">
+        
+        <button
+          className="btn btn-active btn-neutral"
+          disabled={isLoading}
+          onClick={() => {
+            setLoading(true);
+            fetch("http://localhost:3001/token-balance/" + address, {
+              method: "GET",
+              headers: { "Content-Type": "application/json" },
+            })
+              .then(res => res.json())
+              .then(data => {
+                setData(data);
+                setLoading(false);
+              });
+          }}
+        >
+          Show Token Balance
+        </button>
+      </div>
+    );
+
+  return (
+    <div>
+      <p>
+        {data.result
+          ? "Your current token balance is: " + data.result
+          : "I'm sorry, ther was an error."}
+      </p>
+    </div>
   );
 }
 
