@@ -276,14 +276,15 @@ function OpenBets() {
             disabled={isLoading}
             onClick={() => {
               setLoading(true);
+              const objDuration = { duration: ( Number(lotteryDuration) * 60) }
               fetch("http://localhost:3001/open-bets", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ duration: ( Number(lotteryDuration) * 60) }),
+                body: JSON.stringify(objDuration),
               })
                 .then(res => res.json())
                 .then(data => {
-                  console.log(`body: ${{ duration: ( Number(lotteryDuration) * 60) }}`);
+                  console.log(`body: ${objDuration}`);
                   setData(data);
                   setLoading(false);
                   txInProgress = true;
