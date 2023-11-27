@@ -6,6 +6,7 @@ import React from "react";
 
 let lotteryStatus = "closed";
 let txInProgress = false;
+let tokenSymbol = "";
 
 const Home: NextPage = () => {
   return (
@@ -26,12 +27,23 @@ const Home: NextPage = () => {
 function PageBody() {
   return (
     <>
-      <LotteryStatus></LotteryStatus>
+      <LotteryInfo></LotteryInfo>
       <WalletInfo></WalletInfo>
       <LotteryAdmin></LotteryAdmin>
       <BetZone></BetZone>
-      {/* <RandomWord></RandomWord> */}
     </>
+  );
+}
+
+function LotteryInfo() {
+  return (
+    <div className="card w-96 bg-primary text-primary-content mt-4">
+      <div className="card-body">
+        <LotteryStatus></LotteryStatus>
+        <TokenSymbol></TokenSymbol>
+        <CurrentPrize></CurrentPrize>
+      </div>
+      </div>
   );
 }
 
@@ -56,6 +68,56 @@ function LotteryStatus() {
   return (
     <div>
       <p>Lottery Status: {data.result}</p>
+    </div>
+  );
+}
+
+function TokenSymbol() {
+  const [data, setData] = useState<{ result: string }>();
+  const [isLoading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:3001/get-tokenSymbol")
+      .then(res => res.json())
+      .then(data => {
+        setData(data);
+        setLoading(false);
+      });
+  }, []);
+
+  if (isLoading) return <p>Fetching Token Symbol...</p>;
+  if (!data) return <p>No token symbol information</p>;
+
+  tokenSymbol = data.result;
+
+  if(data)
+    return (
+      <div>
+        <p>Token Symbol: {tokenSymbol}</p>
+      </div>
+    );
+}
+
+
+function CurrentPrize() {
+  const [data, setData] = useState<{ result: string }>();
+  const [isLoading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:3001/get-curentPrize")
+      .then(res => res.json())
+      .then(data => {
+        setData(data);
+        setLoading(false);
+      });
+  }, []);
+
+  if (isLoading) return <p>Fetching current prize...</p>;
+  if (!data) return <p>No current prize information</p>;
+
+  return (
+    <div>
+      <p>Current Prize: {data.result} {tokenSymbol}</p>
     </div>
   );
 }
