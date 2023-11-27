@@ -389,6 +389,8 @@ function BetZone() {
           <TokenBalance></TokenBalance>
           <br></br>
           <Buy></Buy>
+          <br></br>
+          <Bet></Bet>
         </div>
       </div>
     );
@@ -443,12 +445,14 @@ function Buy() {
   const [isLoading, setLoading] = useState(false);
   const [isSuccesfull, setBuyingStatus] = useState(false);
   const [hashValue, setHashValue] = useState("");
+
+  if (isLoading) return <div>Performing buy token transaction…</div>;
+
   if (!data)
     return (
       <div className="flex items-center flex-col flex-grow">
         <h2 className="card-title">Buy tokens</h2>
-        <div className="form-control w-full max-w-xs my-1">
-          <input
+        <input
             type="number"
             min="1"
             max="100"
@@ -458,8 +462,6 @@ function Buy() {
             value={amount}
             onChange={e => setAmount(e.target.value)}
           />
-          <br></br>
-        </div>
         <button
           className="btn btn-active btn-neutral"
           disabled={isLoading}
@@ -490,8 +492,74 @@ function Buy() {
   return (
     <div>
       <p>
-        {data.result
-          ? "Purchase transaction hash: " + data.result.transactionHash
+        {isSuccesfull
+          ? "Purchase transaction hash: " + hashValue
+          : "I'm sorry, ther was an error."}
+      </p>
+    </div>
+  );
+}
+
+function Bet() {
+  const [amount, setAmount] = useState("");
+  const [data, setData] = useState<{ result: boolean }>();
+  const [isLoading, setLoading] = useState(false);
+  const [isSuccesfull, setBetStatus] = useState(false);
+  const [hashValue, setHashValue] = useState("");
+
+  if (isLoading) return <div>Performing bet transaction…</div>;
+
+  if (!data)
+    return (
+      <div className="flex items-center flex-col flex-grow">
+        <h2 className="card-title">Bet</h2>
+        Min bet: 1 Token ,
+        <br></br>
+        bet fee: 0.02 Tokens per token bet.
+        <br></br>
+        Min bet total cost = 1.02 Tokens
+        <input
+            type="number"
+            min="1"
+            max="100"
+            step="1"
+            placeholder="Type here the tokens to bet"
+            className="input input-bordered w-full max-w-xs"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+          />
+        <button
+          className="btn btn-active btn-neutral"
+          disabled={isLoading}
+          onClick={() => {
+            setLoading(true);
+            fetch("http://localhost:3001/bet", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ numberOfBets: amount }),
+            })
+              .then(res => res.json())
+              .then(data => {
+                console.log(`body: ${{ amount: amount }}`);
+                setData(data);
+                setLoading(false);
+                if (data.result.success) {
+                  setHashValue(data.result.transactionHash);
+                  setBetStatus(true);
+                }
+              });
+          }}
+        >
+          Place Bet
+        </button>
+      </div>
+    );
+
+  return (
+    <div>
+      <p>
+        {isSuccesfull
+          ? "This is your " + amount + " token(s) Bet transaction hash: " + hashValue
           : "I'm sorry, ther was an error."}
       </p>
     </div>
